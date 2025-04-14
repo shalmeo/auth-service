@@ -1,0 +1,60 @@
+services:
+  diagnosix_api:
+    container_name: diagnosix.api
+    build:
+      context: .
+    restart: unless-stopped
+    stop_signal: SIGINT
+    ports:
+      - "127.0.0.1:9898:9898"
+    networks:
+      - diagnosix.postgres.network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URI: "postgresql+psycopg://diagnosix:password@postgres:5432/auth"
+    command: ["python", "-m", "diagnosix_auth.api"]
+  postgres:
+    container_name: diagnosix.postgres
+    image: postgres:15-alpine
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    networks:
+      - diagnosix.postgres.network
+    volumes:
+      - diagnosix.postgres.data:/var/lib/postgresql/users:rw
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d auth -U diagnosix" ]
+      interval: 10s
+      timeout: 60s
+      retries: 5
+      start_period: 10s
+    environment:
+      POSTGRES_USER: diagnosix
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: auth
+  migration:
+    container_name: diagnosix.migration
+    build:
+      context: .
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - diagnosix.postgres.network
+    volumes:
+      - ./alembic.ini:/app/alembic.ini
+      - ./diagnosix_auth/infrastructure/database/migrations:/app/diagnosix_auth/infrastructure/database/migrations
+    environment:
+      DATABASE_URI: "postgresql+psycopg://diagnosix:password@postgres:5432/auth"
+    command: [ "python", "-m", "alembic", "upgrade", "head" ]
+
+
+volumes:
+  diagnosix.postgres.data: { }
+
+networks:
+  diagnosix.postgres.network: { }

@@ -1,0 +1,12 @@
+uvicorn~=0.34.0
+fastapi~=0.115.12
+PyJWT~=2.10.1
+pydantic~=2.11.3
+starlette~=0.46.1
+SQLAlchemy~=2.0.40
+alembic~=1.15.2
+psycopg~=3.2.6
+psycopg-binary~=3.2.6
+pytest~=8.3.5
+testcontainers~=4.10.0
+httpx~=0.28.1
